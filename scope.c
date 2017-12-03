@@ -8,11 +8,12 @@
 #include <math.h>
 #include <errno.h>
 #include <libusb.h>
-#include "usbcomm.h"
 #include "queue.h"
 #include "cmdargs.h"
 #define PI 3.14159265
+#define MAX_CHAN 8
 #include "scope.h"
+
 
 // Draw grid lines
 void grid(VGfloat x, VGfloat y, // Coordinates of lower left corner
@@ -30,24 +31,6 @@ void grid(VGfloat x, VGfloat y, // Coordinates of lower left corner
     for (iy = y; iy <= y + h; iy += h/ny) {
         Line(x, iy, x + w, iy);
     }
-}
-
-// Draw the background for the oscilloscope screen
-void drawBackground(int w, int h, // width and height of screen
-                    int xdiv, int ydiv,// Number of x and y divisions
-                    int margin){ // Margin around the image
-    VGfloat x1 = margin;
-    VGfloat y1 = margin;
-    VGfloat x2 = w - 2*margin;
-    VGfloat y2 = h - 2*margin;
-    
-    Background(128, 128, 128);
-    
-    Stroke(204, 204, 204, 1);
-    StrokeWidth(1);
-    
-    Fill(44, 77, 120, 1);
-    Rect(10, 10, w-20, h-20); // Draw framing rectangle
 }
 
 // Display x and scale settings
@@ -77,25 +60,36 @@ void processSamples(queue *rawData,  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
-                    int yScaleDivisor,
                     queue *processedData){
     VGfloat x1, y1;
-    data_point * p;
-    char * data;
+    data_point ** p;
+    uint8_t * data;
+    uint8_t sample;
+    uint8_t dataMask = 0x01;
+    
     
     for (int i=0; i< nsamples; i++){
-        data = (char*)Dequeue(rawData);
-        p = (data_point *) malloc(sizeof(data_point));
-        x1 = xstart + (xfinish-xstart)*i/nsamples;
-        y1 = *data * 5 * yscale * 5/yScaleDivisor;
-        p->x = x1;
-        p->y = y1;
+        data = (uint8_t*)Dequeue(rawData);
+        p = (data_point **) malloc(sizeof(data_point*)*8);
+        
+        //Separate each bit and process
+        for(int j = 0; j < MAX_CHAN; j++){
+            p[j] = (data_point*) malloc(sizeof(data_point));
+            x1 = xstart + (xfinish-xstart)*i/nsamples;
+            sample = (*data & (dataMask<<j))>>j;
+            y1 = sample*yscale+(yscale*j);
+            p[j]->x = x1;
+            p[j]->y = y1;
+            printf("%2f %2f %d\n", p[j]->x, p[j]->y, *data);
+        }
         free(data);
         Enqueue(processedData, p);
-        
     }
 }
 
+int * SplitChannel(queue * rawData){
+    
+}
 
 // Plot waveform
 void plotWave(queue *processedData, // sample data
@@ -103,75 +97,36 @@ void plotWave(queue *processedData, // sample data
               int yoffset, // y offset from bottom of screen
               VGfloat linecolor[4] // Color for the wave
 ){
-    
-    data_point * p;
-    VGfloat x1, y1, x2, y2;
-    
+    data_point ** p;
+    VGfloat x1[MAX_CHAN], y1[MAX_CHAN], x2[MAX_CHAN], y2[MAX_CHAN];
     Stroke(linecolor[0], linecolor[1], linecolor[2], linecolor[3]);
     StrokeWidth(4);
     
-    p = (data_point*)Dequeue(processedData);
-    x1 = p->x;
-    y1 = p->y + yoffset;
+    p = (data_point**)Dequeue(processedData);
+    
+
+    for(int i = 0; i < MAX_CHAN; i++){
+        x1[i] = p[i]->x;
+        y1[i] = p[i]->y + yoffset;
+        free(p[i]);
+    }
     free(p);
+    
+    
     for(int i=1; i< nsamples; i++){
-        p = (data_point*)Dequeue(processedData);
-        x2 = p->x;
-        y2 = p->y + yoffset;
-        free(p);
-        Line(x1, y1, x2, y2);
-        x1 = x2;
-        y1 = y2;
-    }
-}
-//returns the amount of samples removed
-int FindTrigger(queue * triggerChan, queue * otherChan, argOptions * args){
-    char current = NULL;
-    char previous = NULL;
-    char * data;
-    int trigger;
-    int trigSlope;
-    
-    trigger = args->trigger;
-    trigSlope = args->trigSlope;
-    
-    
-    if(triggerChan->head){
-        previous = *(char *) triggerChan->head->item;
-        while(triggerChan->count > 0){
-            if(triggerChan->head->prev){
-                current  = *(char *) triggerChan->head->prev->item;
-                if(trigSlope){
-                    if(previous < trigger && current > trigger){
-                        return 1;
-                    }else{
-                        data = Dequeue(triggerChan);
-                        free(data);
-                        data = Dequeue(otherChan);
-                        free(data);
-                        previous = current;
-                    }
-                }else{
-                    if(previous > trigger && current < trigger){
-                        return 1;
-                    }else{
-                        data = Dequeue(triggerChan);
-                        free(data);
-                        data = Dequeue(otherChan);
-                        free(data);
-                        previous = current;
-                    }
-                }
-            }
-            else{
-                break;
-            }
+        p = (data_point**)Dequeue(processedData);
+        for(int j = 0; j < MAX_CHAN; j++){
+            x2[j] = p[j]->x;
+            y2[j] = p[j]->y;
+            free(p[j]);
+            Line(x1[j], y1[j], x2[j], y2[j]);
+            x1[j] = x2[j];
+            y1[j] = y2[j];
         }
-        
+        free(p);
     }
-    printf("Finish");
-    return 0;
 }
+
 
 
 

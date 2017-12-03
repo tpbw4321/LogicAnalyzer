@@ -28,7 +28,6 @@ void processSamples(queue *rawData,  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
-                    int yScaleDivisor,
                     queue *processedData);
 
 
@@ -40,8 +39,6 @@ void plotWave(queue *processedData, // sample data
               VGfloat linecolor[4] // Color for the wave
 );
 
-
-int FindTrigger(queue * triggerChan, queue * otherChan, argOptions * args);
 
 #endif
 
