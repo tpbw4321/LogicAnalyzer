@@ -13,6 +13,7 @@
 #define PI 3.14159265
 #define MAX_CHAN 8
 #include "scope.h"
+#define TEST perror("TEST")
 
 
 // Draw grid lines
@@ -60,71 +61,52 @@ void processSamples(queue *rawData,  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
-                    queue *processedData){
-    VGfloat x1, y1;
-    data_point ** p;
-    uint8_t * data;
-    uint8_t sample;
-    uint8_t dataMask = 0x01;
+                    data_point  processedData[][250]){
+    int x1, y1;
+    int * data;
+    int sample;
+    int dataMask = 0x01;
     
     
     for (int i=0; i< nsamples; i++){
-        data = (uint8_t*)Dequeue(rawData);
-        p = (data_point **) malloc(sizeof(data_point*)*8);
-        
+        data = (int*)Dequeue(rawData);
         //Separate each bit and process
         for(int j = 0; j < MAX_CHAN; j++){
-            p[j] = (data_point*) malloc(sizeof(data_point));
             x1 = xstart + (xfinish-xstart)*i/nsamples;
             sample = (*data & (dataMask<<j))>>j;
             y1 = sample*yscale+(yscale*j)+8*j;
-            p[j]->x = x1;
-            p[j]->y = y1;
+            processedData[j][i].x = x1;
+            processedData[j][i].y = y1;
         }
         free(data);
-        Enqueue(processedData, p);
     }
 }
 
-int * SplitChannel(queue * rawData){
-    
-}
-
 // Plot waveform
-void plotWave(queue *processedData, // sample data
+void plotWave(data_point * processedData, // sample data
               int nsamples, // Number of samples
               int yoffset, // y offset from bottom of screen
               VGfloat linecolor[4] // Color for the wave
 ){
-    data_point ** p;
-    VGfloat x1[MAX_CHAN], y1[MAX_CHAN], x2[MAX_CHAN], y2[MAX_CHAN];
+    int x1, y1, x2, y2;
     Stroke(linecolor[0], linecolor[1], linecolor[2], linecolor[3]);
     StrokeWidth(4);
     
-    p = (data_point**)Dequeue(processedData);
+    x1 = processedData[0].x;
+    y1 = processedData[0].y;
     
-
-    for(int i = 0; i < MAX_CHAN; i++){
-        x1[i] = p[i]->x;
-        y1[i] = p[i]->y + yoffset;
-        free(p[i]);
-    }
-    free(p);
     
     
     for(int i=1; i< nsamples; i++){
-        p = (data_point**)Dequeue(processedData);
-        for(int j = 0; j < MAX_CHAN; j++){
-            x2[j] = p[j]->x;
-            y2[j] = p[j]->y;
-            free(p[j]);
-            Line(x1[j], y1[j], x2[j], y1[j]);
-            Line(x2[j], y1[j], x2[j], y2[j]);
-            x1[j] = x2[j];
-            y1[j] = y2[j];
-        }
-        free(p);
+        x2 = processedData[i].x;
+        y2 = processedData[i].y;
+        Line(x1, y1, x2, y1);
+        Line(x2, y1, x2, y2);
+        x1 = x2;
+        y1 = y2;
     }
+    
+    
 }
 
 

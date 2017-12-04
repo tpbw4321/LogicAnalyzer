@@ -28,12 +28,12 @@ void processSamples(queue *rawData,  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
-                    queue *processedData);
+                    data_point processedData[][250]);
 
 
 
 // Plot waveform
-void plotWave(queue *processedData, // sample data
+void plotWave(data_point *processedData, // sample data
               int nsamples, // Number of samples
               int yoffset, // y offset from bottom of screen
               VGfloat linecolor[4] // Color for the wave
