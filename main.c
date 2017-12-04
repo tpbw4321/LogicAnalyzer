@@ -17,7 +17,7 @@
 #include "queue.h"
 #include "scope.h"
 
-#define SAMP_SIZE 20
+#define SAMP_SIZE 250
 #define NUM_CHAN 8
 
 static queue rawData;
@@ -27,7 +27,7 @@ int main(int argc, const char * argv[]) {
     // insert code here...
     int width, height;
     int yscale = 8;
-    int pixels_per_volt = 128;
+    int pixels_per_volt = 100;
     int * data;
     init(&width, &height);
     VGfloat wavecolor[4] = {0, 0, 0, 0.5};
@@ -37,7 +37,7 @@ int main(int argc, const char * argv[]) {
 
     for(int i = 0; i < SAMP_SIZE; i++){
         data = (int*)malloc(sizeof(int));
-        *data = i % 256;
+        *data = rand() % 256;
         Enqueue(&rawData, data);
     }
     printf("%d %d\n", width, height);

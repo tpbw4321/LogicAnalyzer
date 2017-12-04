@@ -4,7 +4,7 @@
 #define PI 3.14159265
 
 typedef struct{
-    VGfloat x, y;
+    int x, y;
 } data_point;
 
 

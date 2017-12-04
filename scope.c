@@ -77,10 +77,9 @@ void processSamples(queue *rawData,  // sample data
             p[j] = (data_point*) malloc(sizeof(data_point));
             x1 = xstart + (xfinish-xstart)*i/nsamples;
             sample = (*data & (dataMask<<j))>>j;
-            y1 = sample*yscale+(yscale*j);
+            y1 = sample*yscale+(yscale*j)+8*j;
             p[j]->x = x1;
             p[j]->y = y1;
-            printf("%2f %2f %d\n", p[j]->x, p[j]->y, *data);
         }
         free(data);
         Enqueue(processedData, p);
@@ -119,7 +118,8 @@ void plotWave(queue *processedData, // sample data
             x2[j] = p[j]->x;
             y2[j] = p[j]->y;
             free(p[j]);
-            Line(x1[j], y1[j], x2[j], y2[j]);
+            Line(x1[j], y1[j], x2[j], y1[j]);
+            Line(x2[j], y1[j], x2[j], y2[j]);
             x1[j] = x2[j];
             y1[j] = y2[j];
         }
