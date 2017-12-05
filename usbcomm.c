@@ -48,7 +48,7 @@ struct libusb_transfer * SetupIsoTransfer(libusb_device_handle * dev, int endPoi
     static struct libusb_transfer * iso = NULL;
     
     //Allocate Iso Transfer
-    iso = libusb_alloc_transfer(1);
+    iso = libusb_alloc_transfer(numOfPackets);
     if(!iso){
         perror("ISO Setup");
         return NULL;
@@ -78,7 +78,6 @@ int PacketTransfer(libusb_device_handle * dev, struct libusb_transfer * iso, int
     libusb_device * libDev;
     int rcvd_bytes = 0;
     int packetSize;
-    
     libDev = libusb_get_device(dev);
     packetSize = libusb_get_max_packet_size(libDev, endPoint);
     
@@ -111,4 +110,53 @@ int PacketTransfer(libusb_device_handle * dev, struct libusb_transfer * iso, int
     return rcvd_bytes;
     
     
+}
+void CheckUSBError(enum libusb_error error){
+    switch(error){
+        case LIBUSB_ERROR_NO_DEVICE:
+            perror("No Device");
+            break;
+        case LIBUSB_ERROR_BUSY:
+            perror("Busy");
+            break;
+        case LIBUSB_ERROR_NOT_SUPPORTED:
+            perror("Not Supported");
+            break;
+        case LIBUSB_ERROR_IO:
+            perror("IO");
+            break;
+        case LIBUSB_ERROR_OTHER:
+            perror("Other");
+            break;
+        case LIBUSB_ERROR_ACCESS:
+            perror("ACCESS");
+            break;
+        case LIBUSB_ERROR_PIPE:
+            perror("PIPE");
+            break;
+        case LIBUSB_ERROR_NO_MEM:
+            perror("MEM");
+            break;
+        case LIBUSB_ERROR_TIMEOUT:
+            perror("TIMEOUT");
+            break;
+        case LIBUSB_ERROR_OVERFLOW:
+            perror("OVERFLOW");
+            break;
+        case LIBUSB_ERROR_NOT_FOUND:
+            perror("NOT FOUND");
+            break;
+        case LIBUSB_ERROR_INTERRUPTED:
+            perror("INTERRUPTED");
+            break;
+        case LIBUSB_ERROR_INVALID_PARAM:
+            perror("INVALID PARAM");
+            break;
+        case LIBUSB_SUCCESS:
+            perror("SUCCESS");
+            break;
+        default:
+            perror("Something Else");
+            break;
+    }
 }

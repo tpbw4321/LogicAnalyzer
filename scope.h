@@ -2,6 +2,8 @@
 #define scope_h
 
 #define PI 3.14159265
+#define SAMP_SIZE 10000
+#define DEPTH_MAX 10000
 
 typedef struct{
     int x, y;
@@ -23,12 +25,12 @@ void drawBackground(int w, int h, // width and height of screen
 void printScaleSettings(int xscale, int yscale, int xposition, int yposition, VGfloat tcolor[4]);
 
 // Convert waveform samples into screen coordinates
-void processSamples(queue *rawData,  // sample data
+void processSamples(int samples[][DEPTH_MAX],  // sample data
                     int nsamples,    // Number of samples
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
-                    data_point processedData[][250]);
+                    data_point processedData[][SAMP_SIZE]);
 
 
 
@@ -38,7 +40,7 @@ void plotWave(data_point *processedData, // sample data
               int yoffset, // y offset from bottom of screen
               VGfloat linecolor[4] // Color for the wave
 );
-
+void ConverDataToBytes(queue * rawData, int nsamples, int samples[][DEPTH_MAX]);
 
 #endif
 

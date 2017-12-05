@@ -21,4 +21,6 @@ struct libusb_transfer * SetupIsoTransfer(libusb_device_handle * dev, int endPoi
 //Grabs Iso Packet from transfer
 int PacketTransfer(libusb_device_handle * dev, struct libusb_transfer * iso, int endPoint ,unsigned char * dataBuffer, int * dataPtr, enum libusb_transfer_type type );
 
+void CheckUSBError(enum libusb_error error);
+
 #endif /* usbcomm_h */

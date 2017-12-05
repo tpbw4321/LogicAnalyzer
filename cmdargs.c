@@ -86,6 +86,7 @@ int SetNChannels(int  setting, argOptions * options){
 
 //Sets trigger and returns the set trigger value
 int SetTrigger(char * setting, argOptions * options){
+    
     return 1;
 }
 
@@ -111,15 +112,15 @@ int SetXScale(int setting, argOptions * options){
 }
 //Sets Default Options
 void SetDefaultOptions(argOptions * options){
-    //No Free Run
+    //8 Channels
     options->channels = 8;
-    //Trigger Channel 1
+    //5000 Data Points
     options->memDep = 5000;
-    //Trigger 2.5v
+    //Trigger value
     options->trigger = 0;
-    //Trigger Direction Triggers from false to true
+    //True to False Trigger
     options->trigDir = 0;
-    //Trigger Frequency
+    //Sampling Frequency 10Khz
     options->sampFreq = 10000;
     //xScale 100us
     options->xScale = 100;
