@@ -21,10 +21,12 @@
 #include "cmdargs.h"
 
 #define EP1 (0x80|0x01)
+#define EP2 (0x80|0x02)
 #define SAMP_SIZE 10000
 #define NUM_CHAN 8
 #define MAX_PACKET 1000
 #define MICRO 1e-6
+#define POTMAX 255
 static struct libusb_transfer * iso = NULL;
 static libusb_device_handle * dev = NULL;
 static queue rawData;
@@ -55,7 +57,7 @@ static void LIBUSB_CALL ReadBufferData(struct libusb_transfer *transfer){
 }
 
 int main(int argc, const char * argv[]) {
-
+    
     
     int width, height;
     int yscale = 8;
@@ -64,8 +66,8 @@ int main(int argc, const char * argv[]) {
     argOptions options;
     data_point processedData[NUM_CHAN][SAMP_SIZE];
     int sampleData[NUM_CHAN][SAMP_SIZE];
+    unsigned char potReading[2]= {0,0};
     
-    init(&width, &height);
     
     uint8_t * sample;
     
@@ -75,34 +77,47 @@ int main(int argc, const char * argv[]) {
         Enqueue(&rawData, sample);
     }
     
-//    SetDefaultOptions(&options);
-//
-//    dev = SetupDevHandle(0x04B4, 0x8051);
-//    iso = SetupIsoTransfer(dev, EP1, packetBuffer, 1, ReadBufferData, &data);
-//
-//    int packetSize = libusb_get_max_iso_packet_size(libusb_get_device(dev), EP1);
-//    printf("Packet Size: %d", packetSize);
-    int frequency = 1000;
-    int xscale = 100;           //in microseconds
-    int samples_per_screen = frequency*(xscale*MICRO)+1;
+    //    SetDefaultOptions(&options);
+    
+    dev = SetupDevHandle(0x04B4, 0x8051);
+    iso = SetupIsoTransfer(dev, EP1, packetBuffer, 1, ReadBufferData, &data);
+    
+    int frequency = 10000;
+    int xscale = 10000;           //in microseconds
+    int samples_per_screen = frequency*(xscale*MICRO);
+    int samplecount = SAMP_SIZE;
+    int processMax = samplecount/samples_per_screen;
+    int offset = 0;
+    int cursorScale = width/POTMAX;
+    int shiftScale = (samplecount/POTMAX)-10;
+    int potPrevious = 0;
     
     
     ConverDataToBytes(&rawData, SAMP_SIZE, sampleData);
     
-    processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, processedData );
+    printf("Process Max %d", shiftScale);
     
-    Start(width, height);
-    Background(50,50,50);
+    processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
     SelectWaveColors();
     
-    for(int i = 0; i < NUM_CHAN; i++){
-        plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
-    }
+    init(&width, &height);
     
-    End();
+    
     while(1){
         //PacketTransfer(dev, iso, EP1, NULL, &data, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS);
+        PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
+        if(potPrevious != potReading[0]){
+            Start(width, height);
+            Background(50,50,50);
+            processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, shiftScale*potReading[0],processedData );
+            for(int i = 0; i < NUM_CHAN; i++){
+                plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
+            }
+            End();
+            potPrevious = potReading[0];
+        }
     }
+    return 0;
     
 }
 void SelectWaveColors(){

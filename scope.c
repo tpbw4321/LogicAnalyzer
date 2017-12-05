@@ -74,18 +74,17 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
+                    int sampleOffset,
                     data_point  processedData[][DEPTH_MAX]){
     int x1, y1;
-    int * data;
     
     for (int i=0; i < nsamples; i++){
         for(int j = 0; j < MAX_CHAN; j++){
             x1 = xstart + (xfinish-xstart)*i/nsamples;
-            y1 = samples[j][i]*yscale+(yscale*j)+8*j;
+            y1 = samples[j][i+sampleOffset]*yscale+(yscale*j)+8*j;
             processedData[j][i].x = x1;
             processedData[j][i].y = y1;
         }
-        free(data);
     }
 }
 
@@ -113,10 +112,10 @@ void plotWave(data_point * processedData, // sample data
         x1 = x2;
         y1 = y2;
     }
-    if(nsamples > 1)
-        Line(x2,y2, x2+xdelta,y2);
-    else
-        Line(x1,y1,x1*2,y1*2);
+//    if(nsamples > 1)
+//        Line(x2,y2, x2+xdelta,y2);
+//    else
+//        Line(x1,y1,x1*2,y1*2);
     
 }
 

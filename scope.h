@@ -30,6 +30,7 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
                     int xstart,      // starting x position of wave
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
+                    int sampleOffset,
                     data_point processedData[][SAMP_SIZE]);
 
 

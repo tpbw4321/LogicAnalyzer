@@ -78,6 +78,12 @@ int PacketTransfer(libusb_device_handle * dev, struct libusb_transfer * iso, int
     libusb_device * libDev;
     int rcvd_bytes = 0;
     int packetSize;
+    
+    if(!dev)
+        perror("No Device");
+    if(!iso && type == LIBUSB_TRANSFER_TYPE_ISOCHRONOUS)
+        perror("No Transfer");
+    
     libDev = libusb_get_device(dev);
     packetSize = libusb_get_max_packet_size(libDev, endPoint);
     
