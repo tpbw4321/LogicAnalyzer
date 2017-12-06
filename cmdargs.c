@@ -9,14 +9,16 @@
 #include "cmdargs.h"
 #include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 void DisplayAllSettings(const argOptions * options){
-    printf("Channels:    %d\n", options->channels);
-    printf("Memory Depth: %d\n", options->memDep);
-    printf("Sample Freq:   %d\n", options->sampFreq);
+    printf("Channels:          %d\n", options->channels);
+    printf("Memory Depth:      %d\n", options->memDep);
+    printf("Sample Freq:       %d\n", options->sampFreq.freq);
+    printf("Sample Period:     %d\n", options->sampFreq.period);
     printf("Trigger Direction: %d\n", options->trigDir);
-    printf("Trigger Expr: %d\n", options->trigger);
-    printf("X-Scale :  %d\n", options->xScale);
+    printf("Trigger Expr:      %s\n", options->trigger);
+    printf("X-Scale :          %d\n", options->xScale);
 }
 
 //parseArguemnts and and calculates equivalents
@@ -80,34 +82,99 @@ int ParseArgs(int argc, const char * argv[], argOptions * options){
 
 //sets free run mode returns 1 for freerun and 0 for tiggered
 int SetNChannels(int  setting, argOptions * options){
-    options->channels = setting;
+    switch(setting){
+        case 2:
+        case 4:
+        case 8:
+            options->channels = setting;
+            break;
+        default:
+            printf("Invalid NChannels - Default Set\n");
+            
+    }
     return options->channels;
 }
 
 //Sets trigger and returns the set trigger value
 int SetTrigger(char * setting, argOptions * options){
+    options->trigger = (char*)malloc(sizeof(char));
+    if(options->trigger){
+        strcpy(options->trigger, setting);
+        return 1;
+    }else{
+        options->trigger = NULL;
+        printf("No Filename Specified\n");
+        return 0;
+    }
     
-    return 1;
 }
 
 //Sets trigger direction to pos or neg
 int SetTrigDir(char* setting, argOptions * options){
+    if(strcmp(setting, "pos")==0)
+        options->trigDir = 1;
+    else if(strcmp(setting,"neg")==0)
+        options->trigDir = 0;
+    else
+        printf("Invalid TrigDir - Default Set\n");
+    
     return 1;
 }
 
 
 int SetMemDep(int setting, argOptions * options){
+    if(setting > 0)
+        options->memDep = setting;
+    else
+        printf("Invalid MemDepth - Default Set\n");
     return 1;
 }
 
-//Sets Trigger Channel
+//Sets Sampling Frequence
 int SetSampFreq(int setting, argOptions * options){
+    
+    switch(setting){
+        case 1000:
+            options->sampFreq.period = 200;
+            options->sampFreq.freq = setting;
+            break;
+        case 10000:
+            options->sampFreq.period = 20;
+            options->sampFreq.freq = setting;
+            break;
+        case 50000:
+            options->sampFreq.period = 10;
+            options->sampFreq.freq = setting;
+            break;
+        case 100000:
+            options->sampFreq.period = 2;
+            options->sampFreq.freq  = setting;
+            break;
+        default:
+            printf("Invalid SampFreq - Default Set\n");
+            break;
+    }
     return 1;
 }
 
 //Sets xScale
 int SetXScale(int setting, argOptions * options){
-
+    switch(setting){
+        case 1:
+        case 5:
+        case 10:
+        case 100:
+        case 500:
+        case 1000:
+        case 2000:
+        case 5000:
+        case 10000:
+            options->xScale = setting;
+            break;
+        default:
+            printf("Invalid X-Scale - Default Set\n");
+            break;
+    }
     return 0;
 }
 //Sets Default Options
@@ -121,7 +188,8 @@ void SetDefaultOptions(argOptions * options){
     //True to False Trigger
     options->trigDir = 0;
     //Sampling Frequency 10Khz
-    options->sampFreq = 10000;
+    options->sampFreq.freq = 10000;
+    options->sampFreq.period = 20;
     //xScale 100us
     options->xScale = 100;
 

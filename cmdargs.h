@@ -14,18 +14,18 @@
 #define TRIGGER "trigger"
 #include <stdio.h>
 
-typedef struct xSettings{
+typedef struct sampleData{
     int period;
-    int samples;
+    int freq;
     int time;
-}xSettings;
+}sampleData;
 
 typedef struct argOptions{
     int channels;
-    int trigger;
+    char * trigger;
     int trigDir;
     int memDep;
-    int sampFreq;
+    sampleData sampFreq;
     int xScale;
 }argOptions;
 
