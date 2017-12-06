@@ -174,7 +174,7 @@ int GenerateTriggers(char * fileName, uint8_t * triggers){
     
     char expr[TRIGGERMAX];
     
-    if(!GetExpression(fileName, &expr)){
+    if(!GetExpression(fileName, expr)){
         return -1;
     }
     
@@ -190,4 +190,10 @@ int GenerateTriggers(char * fileName, uint8_t * triggers){
     }
     
     return j;
+}
+int CheckTriggerEvent(uint8_t * triggers, int triggerCount, uint8_t event){
+    for(int i = 0; i < triggerCount; i++)
+        if(triggers[i] == event)
+            return 1;
+    return 0;
 }

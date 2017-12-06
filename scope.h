@@ -39,6 +39,7 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
 void plotWave(data_point *processedData, // sample data
               int nsamples, // Number of samples
               int yoffset, // y offset from bottom of screen
+              int triggerLocation,
               VGfloat linecolor[4] // Color for the wave
 );
 void ConverDataToBytes(queue * rawData, int nsamples, int samples[][DEPTH_MAX]);

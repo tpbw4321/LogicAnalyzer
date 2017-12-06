@@ -92,6 +92,7 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
 void plotWave(data_point * processedData, // sample data
               int nsamples, // Number of samples
               int yoffset, // y offset from bottom of screen
+              int triggerLocation,
               VGfloat linecolor[4] // Color for the wave
 ){
     int x1, y1, x2, y2;
@@ -112,11 +113,6 @@ void plotWave(data_point * processedData, // sample data
         x1 = x2;
         y1 = y2;
     }
-//    if(nsamples > 1)
-//        Line(x2,y2, x2+xdelta,y2);
-//    else
-//        Line(x1,y1,x1*2,y1*2);
-    
 }
 
 

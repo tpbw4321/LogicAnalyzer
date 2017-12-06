@@ -92,7 +92,7 @@ int SetTrigger(char * setting, argOptions * options){
 
 //Sets trigger direction to pos or neg
 int SetTrigDir(char* setting, argOptions * options){
-    
+    return 1;
 }
 
 

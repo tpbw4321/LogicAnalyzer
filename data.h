@@ -9,12 +9,13 @@
 #ifndef data_h
 #define data_h
 
-
+#include "stdint.h"
 #define BUFF 100
 #define FALSE 0
 #define TRUE 1
 #define MAXNUMOPS 8
 #define TRIGGERMAX 256
+
 
 
 //typedef enum Operands{
@@ -61,7 +62,10 @@ int EvalPosExpr(int values, char* expr);
 int ConvertOperands(char operand);
 
 //Generates all triggers given an expression
-int GenerateTriggers(char * expr, uint8_t * triggers);
+int GenerateTriggers(char * fileName, uint8_t * triggers);
+
+//Checks an event to see if its is a triggering event
+int CheckTriggerEvent(uint8_t * triggers, int triggerCount, uint8_t event);
 
 //Takes a file name and returns an expression
 int GetExpression(char * fileName, char * expr);

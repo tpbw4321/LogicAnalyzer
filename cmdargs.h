@@ -10,7 +10,6 @@
 #define cmdargs_h
 #define POS "pos"
 #define NEG "neg"
-#define TRIG_MAX 5000.00
 #define FREE "free"
 #define TRIGGER "trigger"
 #include <stdio.h>

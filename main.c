@@ -19,6 +19,7 @@
 #include "usbcomm.h"
 #include "libusb.h"
 #include "cmdargs.h"
+#include "data.h"
 
 #define EP1 (0x80|0x01)
 #define EP2 (0x80|0x02)
@@ -27,6 +28,7 @@
 #define MAX_PACKET 1000
 #define MICRO 1e-6
 #define POTMAX 255
+#define TRIGMAX 256
 static struct libusb_transfer * iso = NULL;
 static libusb_device_handle * dev = NULL;
 static queue rawData;
@@ -35,7 +37,11 @@ static void SelectWaveColors();
 static uint8_t packetBuffer[MAX_PACKET];
 static VGfloat wavecolor[8][4];
 static argOptions options;
-
+static uint8_t triggerEvents[TRIGMAX];
+static int triggerCount= 0;
+static uint8_t triggerFlag=0;
+static int sampRemaining = 0;
+static int evenLocation = 0;
 
 static void LIBUSB_CALL ReadBufferData(struct libusb_transfer *transfer){
     struct libusb_iso_packet_descriptor *ipd = transfer->iso_packet_desc;
@@ -46,7 +52,6 @@ static void LIBUSB_CALL ReadBufferData(struct libusb_transfer *transfer){
         for(int i = 0; i < ipd->actual_length; i++){
             item = (char*)malloc(sizeof(char));
             *item = packetBuffer[i];
-            Enqueue(&rawData, item);
         }
     }
     else{
@@ -67,15 +72,8 @@ int main(int argc, const char * argv[]) {
     data_point processedData[NUM_CHAN][SAMP_SIZE];
     int sampleData[NUM_CHAN][SAMP_SIZE];
     unsigned char potReading[2]= {0,0};
-    
-    
     uint8_t * sample;
     
-    for(int i = 0; i < SAMP_SIZE; i++){
-        sample = (uint8_t*)malloc(sizeof(uint8_t));
-        *sample = i%256;
-        Enqueue(&rawData, sample);
-    }
     
     //    SetDefaultOptions(&options);
     
@@ -91,20 +89,49 @@ int main(int argc, const char * argv[]) {
     int cursorScale = width/POTMAX;
     int shiftScale = (samplecount/POTMAX)-10;
     int potPrevious = 0;
+    unsigned char buffer[64];
+    int * item;
+    
+    char filename[] = "express";
+    
+    triggerCount = GenerateTriggers(filename, triggerEvents);
+    sampRemaining = SAMP_SIZE/2;
+    
+    printf("Samples Remaining: %d\n", sampRemaining);
     
     
-    ConverDataToBytes(&rawData, SAMP_SIZE, sampleData);
     
-    printf("Process Max %d", shiftScale);
-    
-    processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
     SelectWaveColors();
     
+    
+    while(sampRemaining>0){
+        if(PacketTransfer(dev, NULL, EP1, buffer , NULL, LIBUSB_TRANSFER_TYPE_BULK)){
+            for(int i = 0; i < 64; i++){
+                item = (int*)malloc(sizeof(int));
+                *item = buffer[i];
+                if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)){
+                    triggerFlag = 1;
+                    evenLocation = rawData.count;
+                }
+                if(triggerFlag)
+                    sampRemaining--;
+                
+                else if(rawData.count > sampRemaining)
+                    Dequeue(&rawData);
+                
+                if(sampRemaining > 0){
+                    //printf("%3d ", *item);
+                    Enqueue(&rawData, item);
+                }
+            }
+        }
+    }
+    
+    
     init(&width, &height);
-    
-    
+    ConverDataToBytes(&rawData, rawData.count, sampleData);
+    processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
     while(1){
-        //PacketTransfer(dev, iso, EP1, NULL, &data, LIBUSB_TRANSFER_TYPE_ISOCHRONOUS);
         PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
         if(potPrevious != potReading[0]){
             Start(width, height);
