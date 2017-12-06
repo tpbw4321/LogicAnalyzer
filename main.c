@@ -41,7 +41,7 @@ static uint8_t triggerEvents[TRIGMAX];
 static int triggerCount= 0;
 static uint8_t triggerFlag=0;
 static int sampRemaining = 0;
-static int evenLocation = 0;
+static int eventLocation = 0;
 
 static void LIBUSB_CALL ReadBufferData(struct libusb_transfer *transfer){
     struct libusb_iso_packet_descriptor *ipd = transfer->iso_packet_desc;
@@ -83,14 +83,17 @@ int main(int argc, const char * argv[]) {
     int frequency = 10000;
     int xscale = 10000;           //in microseconds
     int samples_per_screen = frequency*(xscale*MICRO);
-    int samplecount = SAMP_SIZE;
-    int processMax = samplecount/samples_per_screen;
+    int samplecount = 0;
+    int processMax = SAMP_SIZE/samples_per_screen;
     int offset = 0;
     int cursorScale = width/POTMAX;
-    int shiftScale = (samplecount/POTMAX)-10;
-    int potPrevious = 0;
+    int shiftScale = 0;
+    int shiftPrevious = 500;
+    int cursorPrevious = 500;
+    int cursScale = 0;
     unsigned char buffer[64];
     int * item;
+    
     
     char filename[] = "express";
     
@@ -102,7 +105,8 @@ int main(int argc, const char * argv[]) {
     
     
     SelectWaveColors();
-    
+    init(&width, &height);
+    VGfloat textcolor[4] = {0, 200, 200, 0.5}; // Color for displaying text
     
     while(sampRemaining>0){
         if(PacketTransfer(dev, NULL, EP1, buffer , NULL, LIBUSB_TRANSFER_TYPE_BULK)){
@@ -111,7 +115,7 @@ int main(int argc, const char * argv[]) {
                 *item = buffer[i];
                 if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)){
                     triggerFlag = 1;
-                    evenLocation = rawData.count;
+                    eventLocation = rawData.count;
                 }
                 if(triggerFlag)
                     sampRemaining--;
@@ -126,22 +130,39 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
+    samplecount = rawData.count;
+    
+    shiftScale = (samplecount/POTMAX)-1;
+    cursScale = width/POTMAX;
     
     
-    init(&width, &height);
+    
+
+
+    int startPos;
+
     ConverDataToBytes(&rawData, rawData.count, sampleData);
     processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
     while(1){
         PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
-        if(potPrevious != potReading[0]){
+        if(shiftPrevious != potReading[0] || cursorPrevious != potReading[1]){
+            startPos = shiftScale*potReading[0];
             Start(width, height);
             Background(50,50,50);
-            processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, shiftScale*potReading[0],processedData );
+            processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, startPos,processedData );
+            printScaleSettings(cursScale, potReading[1] , width-300, height-50, textcolor);
+            
             for(int i = 0; i < NUM_CHAN; i++){
                 plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
             }
+            if(startPos <= eventLocation && eventLocation < samples_per_screen + startPos){
+                plotTriggerEvent(samples_per_screen, 0, width, pixels_per_volt, eventLocation-startPos);
+            }
+            DisplayCursor(samples_per_screen, 0, width, pixels_per_volt, cursScale*(POTMAX-potReading[1]));
+            
             End();
-            potPrevious = potReading[0];
+            shiftPrevious = potReading[0];
+            cursorPrevious = potReading[1];
         }
     }
     return 0;

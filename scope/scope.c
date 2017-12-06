@@ -7,9 +7,7 @@
 #include <fontinfo.h>
 #include <math.h>
 #include <errno.h>
-#include <libusb.h>
 #include "queue.h"
-#include "cmdargs.h"
 #define PI 3.14159265
 #define MAX_CHAN 8
 #include "scope.h"
@@ -37,7 +35,9 @@ void grid(VGfloat x, VGfloat y, // Coordinates of lower left corner
 // Display x and scale settings
 void printScaleSettings(int xscale, int yscale, int xposition, int yposition, VGfloat tcolor[4]) {
     char str[100];
+    int y;
     
+    y = (yscale * 25)>>4;
     
     setfill(tcolor);
     if (xscale >= 1000)
@@ -46,10 +46,10 @@ void printScaleSettings(int xscale, int yscale, int xposition, int yposition, VG
         sprintf(str, "X scale = %2d us/div", xscale);
     Text(xposition, yposition, str, SansTypeface, 18);
     
-    if(yscale >= 1000)
-        sprintf(str, "Y scale = %2d  V/div",  yscale/1000);
+    if(y >= 1000)
+        sprintf(str, "Y scale = %2d  V/div",  y/1000);
     else
-        sprintf(str, "Y scale = %2d mV/div",  yscale);
+        sprintf(str, "Y scale = %2d mV/div",  y);
     Text(xposition, yposition-50, str, SansTypeface, 18);
 }
 
@@ -113,27 +113,25 @@ void plotWave(data_point * processedData, // sample data
 void plotTriggerEvent(int nsamples, int xstart, int xfinish, int yscale, int triggerLocation){
     int x1,x2,y1,y2;
     
-    Stroke(255,154,0,5);
-    StrokeWidth(8);
+    Stroke(0,0,0,5);
+    StrokeWidth(4);
     
     x1 = xstart + (xfinish-xstart)*triggerLocation/nsamples;
+    x1 = 500;
     y1 = 0;
     x2 = x1;
-    y2 = 8*yscale+100;
+    y2 = 8*yscale;
     Line(x1,y1,x2,y2);
+    perror("wemadeit");
 }
 
 //Displays the cursor
 void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale,int cursorLocation){
     int x1,x2,y1,y2;
-    
-    Stroke(255,255,0,5);
-    StrokeWidth(8);
-    
-    x1 = cursorLocation;
+    x1 = xstart + (xfinish-xstart)*cursorLocation/nsamples;
     y1 = 0;
     x2 = x1;
-    y2 = 8*yscale+100;
+    y2 = 8*yscale;
     Line(x1,y1,x2,y2);
     
     
