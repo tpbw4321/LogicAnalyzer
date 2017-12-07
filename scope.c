@@ -44,13 +44,13 @@ void printScaleSettings(int xscale, int yscale, int xposition, int yposition, VG
         sprintf(str, "X scale = %2d ms/div", xscale/1000);
     else
         sprintf(str, "X scale = %2d us/div", xscale);
-    Text(xposition, yposition, str, SansTypeface, 18);
+    Text(xposition, 1000, str, SansTypeface, 18);
     
     if(yscale >= 1000)
         sprintf(str, "Y scale = %2d  V/div",  yscale/1000);
     else
         sprintf(str, "Y scale = %2d mV/div",  yscale);
-    Text(xposition, yposition-50, str, SansTypeface, 18);
+    Text(xposition-500, 1000, str, SansTypeface, 18);
 }
 
 void ConverDataToBytes(queue * rawData, int nsamples, int samples[][DEPTH_MAX]){
@@ -78,12 +78,13 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
     
     for (int i=0; i < nsamples; i++){
         for(int j = 0; j < MAX_CHAN; j++){
-            x1 = xstart + (xfinish-xstart)*i/nsamples;
+            x1 = xstart + (xfinish-xstart)*i/(nsamples-1);
             y1 = samples[j][i+sampleOffset]*yscale+(yscale*j)+8*j;
             processedData[j][i].x = x1;
             processedData[j][i].y = y1;
         }
     }
+
 }
 
 // Plot waveform
@@ -116,7 +117,7 @@ void plotTriggerEvent(int nsamples, int xstart, int xfinish, int yscale, int tri
     Stroke(255,154,0,5);
     StrokeWidth(8);
     
-    x1 = xstart + (xfinish-xstart)*triggerLocation/nsamples;
+    x1 = xstart + (xfinish-xstart)*triggerLocation/(nsamples-1);
     y1 = 0;
     x2 = x1;
     y2 = 8*yscale+100;
@@ -135,7 +136,18 @@ void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale,int cursorL
     x2 = x1;
     y2 = 8*yscale+100;
     Line(x1,y1,x2,y2);
+}
+void DisplayTime(int xstart, int xdivision, float secPerSample,int eventLocation, int samplesPerScreen){
+    int startTime;
+    int samplesPerDivision = samplesPerScreen/5;
+    char str[255];
+    startTime = (xstart - eventLocation);
     
+    
+    for(int i = 0; i < 4; i++){
+        sprintf(str,"%2f",(startTime+samplesPerDivision*(i+1))*secPerSample*1000);
+        Text(xdivision*(i+1), 950, str, SansTypeface, 18);
+    }
     
 }
 

@@ -15,8 +15,10 @@ int GetExpression(char * fileName, char * expr){
     FILE * fp;
     fp = fopen(fileName, "r");
     
-    if(!fp)
+    if(!fp){
+        printf("Unable to Open \"%s\"\n", fileName);
         return 0;
+    }
     
     fscanf(fp,"%s", expr);
     return 1;

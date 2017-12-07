@@ -49,5 +49,8 @@ void ConverDataToBytes(queue * rawData, int nsamples, int samples[][DEPTH_MAX]);
 
 //Displays the cursor
 void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale, int cursorLocation);
+
+//Display timing marks
+void DisplayTime(int xstart, int xdivision, float secPerSample,int eventLocation, int samplesPerScreen);
 #endif
 

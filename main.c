@@ -23,43 +23,24 @@
 
 #define EP1 (0x80|0x01)
 #define EP2 (0x80|0x02)
+#define EP3 (0x00|0x03)
 #define SAMP_SIZE 10000
 #define NUM_CHAN 8
 #define MAX_PACKET 1000
 #define MICRO 1e-6
 #define POTMAX 255
 #define TRIGMAX 256
-static struct libusb_transfer * iso = NULL;
+
 static libusb_device_handle * dev = NULL;
 static queue rawData;
-static queue processedData;
 static void SelectWaveColors();
 static uint8_t packetBuffer[MAX_PACKET];
 static VGfloat wavecolor[8][4];
-static argOptions options;
 static uint8_t triggerEvents[TRIGMAX];
 static int triggerCount= 0;
 static uint8_t triggerFlag=0;
 static int sampRemaining = 0;
 static int eventLocation = 0;
-
-static void LIBUSB_CALL ReadBufferData(struct libusb_transfer *transfer){
-    struct libusb_iso_packet_descriptor *ipd = transfer->iso_packet_desc;
-    char * item;
-    
-    if(ipd->status == LIBUSB_TRANSFER_COMPLETED){
-        *(int *)transfer->user_data = ipd->actual_length;
-        for(int i = 0; i < ipd->actual_length; i++){
-            item = (char*)malloc(sizeof(char));
-            *item = packetBuffer[i];
-        }
-    }
-    else{
-        perror("Failed");
-        *(int *)transfer->user_data = -1;
-        
-    }
-}
 
 int main(int argc, const char * argv[]) {
     
@@ -78,36 +59,41 @@ int main(int argc, const char * argv[]) {
     //    SetDefaultOptions(&options);
     
     dev = SetupDevHandle(0x04B4, 0x8051);
-    iso = SetupIsoTransfer(dev, EP1, packetBuffer, 1, ReadBufferData, &data);
     
-    int frequency = 10000;
+    int frequency = 100;
     int xscale = 10000;           //in microseconds
     int samples_per_screen = frequency*(xscale*MICRO);
     int samplecount = 0;
-    int processMax = SAMP_SIZE/samples_per_screen;
     int offset = 0;
     int cursorScale = width/POTMAX;
     int shiftScale = 0;
     int shiftPrevious = 500;
     int cursorPrevious = 500;
     int cursScale = 0;
+    int xdivisions = 0;
     unsigned char buffer[64];
     int * item;
+    char period[2] = {0,0};
+    float secPerSample;
     
+    ParseArgs(argc, argv, &options);
+    DisplayAllSettings(&options);
+    triggerCount = GenerateTriggers(options.trigger, triggerEvents);
+    if(triggerCount < 0){
+        printf("Invalid Trigger\n");
+        return -1;
+    }
+    options.sampFreq.freq = 10000;
     
-    char filename[] = "express";
+    secPerSample = 1.0/options.sampFreq.freq;
     
-    triggerCount = GenerateTriggers(filename, triggerEvents);
-    sampRemaining = SAMP_SIZE/2;
-    
-    printf("Samples Remaining: %d\n", sampRemaining);
-    
-    
+    sampRemaining = options.memDep/2;
+    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO);
+
     
     SelectWaveColors();
     init(&width, &height);
     VGfloat textcolor[4] = {0, 200, 200, 0.5}; // Color for displaying text
-    
     while(sampRemaining>0){
         if(PacketTransfer(dev, NULL, EP1, buffer , NULL, LIBUSB_TRANSFER_TYPE_BULK)){
             for(int i = 0; i < 64; i++){
@@ -124,21 +110,20 @@ int main(int argc, const char * argv[]) {
                     Dequeue(&rawData);
                 
                 if(sampRemaining > 0){
-                    //printf("%3d ", *item);
                     Enqueue(&rawData, item);
                 }
             }
         }
     }
+    
     samplecount = rawData.count;
+    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO);
     
     shiftScale = (samplecount/POTMAX)-1;
     cursScale = width/POTMAX;
     
+    xdivisions = width/5;
     
-    
-
-
     int startPos;
 
     ConverDataToBytes(&rawData, rawData.count, sampleData);
@@ -159,6 +144,7 @@ int main(int argc, const char * argv[]) {
                 plotTriggerEvent(samples_per_screen, 0, width, pixels_per_volt, eventLocation-startPos);
             }
             DisplayCursor(samples_per_screen, 0, width, pixels_per_volt, cursScale*(POTMAX-potReading[1]));
+            DisplayTime(startPos, xdivisions, secPerSample, eventLocation, samples_per_screen);
             
             End();
             shiftPrevious = potReading[0];
