@@ -137,15 +137,18 @@ void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale,int cursorL
     y2 = 8*yscale+100;
     Line(x1,y1,x2,y2);
 }
+
+//Display times
 void DisplayTime(int xstart, int xdivision, float secPerSample,int eventLocation, int samplesPerScreen){
     int startTime;
     int samplesPerDivision = samplesPerScreen/5;
     char str[255];
+    
     startTime = (xstart - eventLocation);
     
     
     for(int i = 0; i < 4; i++){
-        sprintf(str,"%2f",(startTime+samplesPerDivision*(i+1))*secPerSample*1000);
+        sprintf(str,"%2f",(startTime+samplesPerDivision*(i+1))*secPerSample);
         Text(xdivision*(i+1), 950, str, SansTypeface, 18);
     }
     

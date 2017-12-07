@@ -30,6 +30,8 @@
 #define MICRO 1e-6
 #define POTMAX 255
 #define TRIGMAX 256
+#define SET 0
+#define PERIOD 1
 
 static libusb_device_handle * dev = NULL;
 static queue rawData;
@@ -56,7 +58,7 @@ int main(int argc, const char * argv[]) {
     uint8_t * sample;
     
     
-    //    SetDefaultOptions(&options);
+    SetDefaultOptions(&options);
     
     dev = SetupDevHandle(0x04B4, 0x8051);
     
@@ -73,8 +75,8 @@ int main(int argc, const char * argv[]) {
     int xdivisions = 0;
     unsigned char buffer[64];
     int * item;
-    char period[2] = {0,0};
     float secPerSample;
+    unsigned char control[2];
     
     ParseArgs(argc, argv, &options);
     DisplayAllSettings(&options);
@@ -83,17 +85,21 @@ int main(int argc, const char * argv[]) {
         printf("Invalid Trigger\n");
         return -1;
     }
-    options.sampFreq.freq = 10000;
     
-    secPerSample = 1.0/options.sampFreq.freq;
+    control[SET] = 1;
+    control[PERIOD] = options.sampFreq.period;
+    int sent_bytes = 0;
+    
+    if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
+       return -1;
     
     sampRemaining = options.memDep/2;
-    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO);
 
-    
     SelectWaveColors();
     init(&width, &height);
     VGfloat textcolor[4] = {0, 200, 200, 0.5}; // Color for displaying text
+    
+    //Gather Samples
     while(sampRemaining>0){
         if(PacketTransfer(dev, NULL, EP1, buffer , NULL, LIBUSB_TRANSFER_TYPE_BULK)){
             for(int i = 0; i < 64; i++){
@@ -116,8 +122,10 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    samplecount = rawData.count;
+    secPerSample = 1.0/options.sampFreq.freq;
     samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO);
+    
+    samplecount = rawData.count;
     
     shiftScale = (samplecount/POTMAX)-1;
     cursScale = width/POTMAX;
