@@ -114,7 +114,7 @@ int main(int argc, const char * argv[]) {
                 item = (int*)malloc(sizeof(int));
                 *item = buffer[i];
                 if(options.trigDir == 1){
-                    if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)){
+                    if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item) && rawData.count > sampRemaining){
                         triggerFlag = 1;
                         eventLocation = rawData.count;
                     }
@@ -129,7 +129,7 @@ int main(int argc, const char * argv[]) {
                     }
                 }
                 else{
-                    if(!negFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)&& !triggerFlag){
+                    if(!negFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)&& !triggerFlag && rawData.count > sampRemaining){
                         negFlag = 1;
                     }
                     if(negFlag && !CheckTriggerEvent(triggerEvents, triggerCount, *item)&& !triggerFlag){

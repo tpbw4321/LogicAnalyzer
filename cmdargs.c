@@ -136,21 +136,21 @@ int SetMemDep(int setting, argOptions * options){
 int SetSampFreq(int setting, argOptions * options){
     
     switch(setting){
-        case 1000:
+        case 1:
             options->sampFreq.period = 200;
-            options->sampFreq.freq = setting;
+            options->sampFreq.freq = setting*1000;
             break;
-        case 10000:
+        case 10:
             options->sampFreq.period = 20;
-            options->sampFreq.freq = setting;
+            options->sampFreq.freq = setting*1000;
             break;
-        case 50000:
+        case 50:
             options->sampFreq.period = 10;
-            options->sampFreq.freq = setting;
+            options->sampFreq.freq = setting*1000;
             break;
-        case 100000:
+        case 100:
             options->sampFreq.period = 2;
-            options->sampFreq.freq  = setting;
+            options->sampFreq.freq  = setting*1000;
             break;
         default:
             printf("Invalid SampFreq - Default Set\n");

@@ -120,7 +120,7 @@ void plotTriggerEvent(int nsamples, int xstart, int xfinish, int yscale, int tri
     x1 = xstart + (xfinish-xstart)*triggerLocation/(nsamples-1);
     y1 = 0;
     x2 = x1;
-    y2 = 8*yscale+100;
+    y2 = 8*yscale+20*(9);
     Line(x1,y1,x2,y2);
 }
 
@@ -134,7 +134,7 @@ void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale,int cursorL
     x1 = cursorLocation;
     y1 = 0;
     x2 = x1;
-    y2 = 8*yscale+100;
+    y2 = 8*yscale+20*(9);
     Line(x1,y1,x2,y2);
 }
 

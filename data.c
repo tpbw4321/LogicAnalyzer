@@ -29,7 +29,7 @@ int DataIsOperand(char item){
 }
 int ConvertOperands(char operand){
     switch(operand){
-        case 'A':
+        case 'A':  //Top Bit
         case 'a':
             return A;
             break;
@@ -59,7 +59,7 @@ int ConvertOperands(char operand){
             break;
         case 'H':
         case 'h':
-            return H;
+            return H; //Bottom Bit
             break;
         default:
             return -1;
