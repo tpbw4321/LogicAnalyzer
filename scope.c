@@ -115,7 +115,7 @@ void plotTriggerEvent(int nsamples, int xstart, int xfinish, int yscale, int tri
     int x1,x2,y1,y2;
     
     Stroke(255,154,0,5);
-    StrokeWidth(8);
+    StrokeWidth(5);
     
     x1 = xstart + (xfinish-xstart)*triggerLocation/(nsamples-1);
     y1 = 0;
@@ -139,17 +139,24 @@ void DisplayCursor(int nsamples, int xstart, int xfinish, int yscale,int cursorL
 }
 
 //Display times
-void DisplayTime(int xstart, int xdivision, float secPerSample,int eventLocation, int samplesPerScreen){
-    int startTime;
-    int samplesPerDivision = samplesPerScreen/5;
-    char str[255];
+void DisplayTime(int xstart, int width, float secPerSample,int eventLocation, int samplesPerScreen, int cursorLocation){
     
+    float startTime;
+    float samplesPerDivision = samplesPerScreen/5;
+    char str[255];
+    float cursorTime = 0;
+    int xdivision = width/5;
     startTime = (xstart - eventLocation);
     
+    VGfloat textcolor[4] = {0, 200, 200, 0.5}; // Color for displaying text
+    setfill(textcolor);
+    
+
+    cursorTime = (startTime+cursorLocation) * secPerSample;
     
     for(int i = 0; i < 4; i++){
-        sprintf(str,"%2f",(startTime+samplesPerDivision*(i+1))*secPerSample);
-        Text(xdivision*(i+1), 950, str, SansTypeface, 18);
+        sprintf(str,"%fs",(startTime+samplesPerDivision*(i+1))*secPerSample);
+        Text(xdivision*(i+1), 950, str, SansTypeface, 14);
     }
     
 }

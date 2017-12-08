@@ -183,10 +183,8 @@ void SetDefaultOptions(argOptions * options){
     options->channels = 8;
     //5000 Data Points
     options->memDep = 5000;
-    //Trigger value
-    options->trigger = 0;
     //True to False Trigger
-    options->trigDir = 0;
+    options->trigDir = 1;
     //Sampling Frequency 10Khz
     options->sampFreq.freq = 10000;
     options->sampFreq.period = 20;

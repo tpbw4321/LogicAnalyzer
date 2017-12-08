@@ -77,6 +77,8 @@ int main(int argc, const char * argv[]) {
     int * item;
     float secPerSample;
     unsigned char control[2];
+    uint8_t negFlag = 0;
+    int offChannel[DEPTH_MAX];
     
     ParseArgs(argc, argv, &options);
     DisplayAllSettings(&options);
@@ -91,13 +93,12 @@ int main(int argc, const char * argv[]) {
     int sent_bytes = 0;
     
     if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
-       return -1;
-    
-    sampRemaining = options.memDep/2;
+        return -1;
 
+    sampRemaining = options.memDep/2;
+    
     SelectWaveColors();
     init(&width, &height);
-    VGfloat textcolor[4] = {0, 200, 200, 0.5}; // Color for displaying text
     
     //Gather Samples
     while(sampRemaining>0){
@@ -105,36 +106,58 @@ int main(int argc, const char * argv[]) {
             for(int i = 0; i < 64; i++){
                 item = (int*)malloc(sizeof(int));
                 *item = buffer[i];
-                if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)){
-                    triggerFlag = 1;
-                    eventLocation = rawData.count;
+                if(options.trigDir == 1){
+                    if(!triggerFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)){
+                        triggerFlag = 1;
+                        eventLocation = rawData.count;
+                    }
+                    if(triggerFlag)
+                        sampRemaining--;
+                    
+                    else if(rawData.count > sampRemaining)
+                        Dequeue(&rawData);
+                    
+                    if(sampRemaining > 0){
+                        Enqueue(&rawData, item);
+                    }
                 }
-                if(triggerFlag)
-                    sampRemaining--;
-                
-                else if(rawData.count > sampRemaining)
-                    Dequeue(&rawData);
-                
-                if(sampRemaining > 0){
-                    Enqueue(&rawData, item);
+                else{
+                    if(!negFlag && CheckTriggerEvent(triggerEvents, triggerCount, *item)&& !triggerFlag){
+                        negFlag = 1;
+                    }
+                    if(negFlag && !CheckTriggerEvent(triggerEvents, triggerCount, *item)&& !triggerFlag){
+                        triggerFlag = 1;
+                        eventLocation = rawData.count;
+                    }
+                    if(triggerFlag)
+                        sampRemaining--;
+                    else if(rawData.count > sampRemaining)
+                        Dequeue(&rawData);
+                    if(sampRemaining > 0)
+                        Enqueue(&rawData, item);
                 }
             }
         }
     }
     
+    control[SET] = 2;
+
+    if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
+        return -1;
+    
     secPerSample = 1.0/options.sampFreq.freq;
-    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO);
+    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO)*10;
     
     samplecount = rawData.count;
     
-    shiftScale = (samplecount/POTMAX)-1;
-    cursScale = width/POTMAX;
-    
-    xdivisions = width/5;
+    shiftScale = (samplecount/POTMAX);
+    cursScale = width/POTMAX - 1;
     
     int startPos;
-
+    
     ConverDataToBytes(&rawData, rawData.count, sampleData);
+
+    
     processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
     while(1){
         PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
@@ -143,17 +166,16 @@ int main(int argc, const char * argv[]) {
             Start(width, height);
             Background(50,50,50);
             processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, startPos,processedData );
-            printScaleSettings(cursScale, potReading[1] , width-300, height-50, textcolor);
+            //printScaleSettings(cursScale, potReading[1] , width-300, height-50, textcolor);
             
-            for(int i = 0; i < NUM_CHAN; i++){
+            for(int i = 0; i < options.channels; i++){
                 plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
             }
             if(startPos <= eventLocation && eventLocation < samples_per_screen + startPos){
                 plotTriggerEvent(samples_per_screen, 0, width, pixels_per_volt, eventLocation-startPos);
             }
             DisplayCursor(samples_per_screen, 0, width, pixels_per_volt, cursScale*(POTMAX-potReading[1]));
-            DisplayTime(startPos, xdivisions, secPerSample, eventLocation, samples_per_screen);
-            
+            DisplayTime(startPos, width, secPerSample, eventLocation, samples_per_screen, cursScale*(POTMAX-potReading[1]));
             End();
             shiftPrevious = potReading[0];
             cursorPrevious = potReading[1];
