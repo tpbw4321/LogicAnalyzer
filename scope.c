@@ -18,20 +18,19 @@
 
 // Draw grid lines
 void grid(VGfloat x, VGfloat y, // Coordinates of lower left corner
-          int nx, int ny, // Number of x and y divisions
+          int yscale, // Number of x and y divisions
           int w, int h) // screen width and height
 
 {
-    VGfloat ix, iy;
+    VGfloat x1, y1;
     Stroke(128, 128, 128, 0.5); // Set color
     StrokeWidth(2); // Set width of lines
-    for (ix = x; ix <= x + w; ix += w/nx) {
-        Line(ix, y, ix, y + h);
+
+    for(int j = 0; j < MAX_CHAN; j++){
+        y1 = yscale+(yscale*j)+40*(j+1);
+        Line(0, y1 , w, y1);
     }
-    
-    for (iy = y; iy <= y + h; iy += h/ny) {
-        Line(x, iy, x + w, iy);
-    }
+
 }
 
 // Display x and scale settings
@@ -40,6 +39,7 @@ void printScaleSettings(int xscale, int yscale, int xposition, int yposition, VG
     
     
     setfill(tcolor);
+    
     if (xscale >= 1000)
         sprintf(str, "X scale = %2d ms/div", xscale/1000);
     else
@@ -79,7 +79,7 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
     for (int i=0; i < nsamples; i++){
         for(int j = 0; j < MAX_CHAN; j++){
             x1 = xstart + (xfinish-xstart)*i/(nsamples-1);
-            y1 = samples[j][i+sampleOffset]*yscale+(yscale*j)+8*j;
+            y1 = samples[j][i+sampleOffset]*yscale+(yscale*j)+20*(j+1);
             processedData[j][i].x = x1;
             processedData[j][i].y = y1;
         }

@@ -28,6 +28,8 @@ int ParseArgs(int argc, const char * argv[], argOptions * options){
     char setting[255];
     char defaultFlag = 0;
     
+    options->trigger = NULL;
+    
     SetDefaultOptions(options);
     
     if(argc == 0){

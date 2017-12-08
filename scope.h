@@ -2,7 +2,6 @@
 #define scope_h
 
 #define PI 3.14159265
-#define SAMP_SIZE 10000
 #define DEPTH_MAX 10000
 
 typedef struct{
@@ -12,7 +11,7 @@ typedef struct{
 
 // Draw grid lines
 void grid(VGfloat x, VGfloat y, // Coordinates of lower left corner
-          int nx, int ny, // Number of x and y divisions
+          int yscale, // Number of x and y divisions
           int w, int h); // screen width and height
 
 
@@ -31,7 +30,7 @@ void processSamples(int samples[][DEPTH_MAX],  // sample data
                     int xfinish,     // Ending x position of wave
                     float yscale,    // y scale in pixels per volt
                     int sampleOffset,
-                    data_point processedData[][SAMP_SIZE]);
+                    data_point processedData[][DEPTH_MAX]);
 
 
 

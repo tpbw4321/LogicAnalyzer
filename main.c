@@ -32,6 +32,7 @@
 #define TRIGMAX 256
 #define SET 0
 #define PERIOD 1
+#define BUFFER 100000
 
 static libusb_device_handle * dev = NULL;
 static queue rawData;
@@ -49,7 +50,7 @@ int main(int argc, const char * argv[]) {
     
     int width, height;
     int yscale = 8;
-    int pixels_per_volt = 100;
+    int pixels_per_volt = 80;
     int data = 0;
     argOptions options;
     data_point processedData[NUM_CHAN][SAMP_SIZE];
@@ -73,7 +74,7 @@ int main(int argc, const char * argv[]) {
     int cursorPrevious = 500;
     int cursScale = 0;
     int xdivisions = 0;
-    unsigned char buffer[64];
+    unsigned char buffer[BUFFER];
     int * item;
     float secPerSample;
     unsigned char control[2];
@@ -90,11 +91,13 @@ int main(int argc, const char * argv[]) {
     
     control[SET] = 1;
     control[PERIOD] = options.sampFreq.period;
+    
     int sent_bytes = 0;
+    int rcvd_bytes = 0;
     
     if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
         return -1;
-
+    
     sampRemaining = options.memDep/2;
     
     SelectWaveColors();
@@ -102,8 +105,12 @@ int main(int argc, const char * argv[]) {
     
     //Gather Samples
     while(sampRemaining>0){
-        if(PacketTransfer(dev, NULL, EP1, buffer , NULL, LIBUSB_TRANSFER_TYPE_BULK)){
-            for(int i = 0; i < 64; i++){
+        if(libusb_bulk_transfer(dev, EP1, buffer, BUFFER, &rcvd_bytes, 0)!=0){
+            perror("Incoming Data");
+            return -1;
+        }
+        else{
+            for(int i = 0; i < rcvd_bytes; i++){
                 item = (int*)malloc(sizeof(int));
                 *item = buffer[i];
                 if(options.trigDir == 1){
@@ -131,7 +138,7 @@ int main(int argc, const char * argv[]) {
                     }
                     if(triggerFlag)
                         sampRemaining--;
-                    else if(rawData.count > sampRemaining)
+                    else if(rawData.count >= sampRemaining)
                         Dequeue(&rawData);
                     if(sampRemaining > 0)
                         Enqueue(&rawData, item);
@@ -139,48 +146,51 @@ int main(int argc, const char * argv[]) {
             }
         }
     }
+    printf("Count: %d\n", rawData.count);
     
-    control[SET] = 2;
-
-    if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
-        return -1;
     
-    secPerSample = 1.0/options.sampFreq.freq;
-    samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO)*10;
+        control[SET] = 2;
     
-    samplecount = rawData.count;
+        if(libusb_interrupt_transfer(dev, EP3, control, 2, &sent_bytes, 0) !=0 )
+           return -1;
     
-    shiftScale = (samplecount/POTMAX);
-    cursScale = width/POTMAX - 1;
+        secPerSample = 1.0/options.sampFreq.freq;
+        samples_per_screen = options.sampFreq.freq*(options.xScale*MICRO)*10;
     
-    int startPos;
+        samplecount = rawData.count;
     
-    ConverDataToBytes(&rawData, rawData.count, sampleData);
-
+        shiftScale = (samplecount/POTMAX) - 1;
+        cursScale = width/POTMAX;
     
-    processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
-    while(1){
-        PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
-        if(shiftPrevious != potReading[0] || cursorPrevious != potReading[1]){
-            startPos = shiftScale*potReading[0];
-            Start(width, height);
-            Background(50,50,50);
-            processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, startPos,processedData );
-            //printScaleSettings(cursScale, potReading[1] , width-300, height-50, textcolor);
-            
-            for(int i = 0; i < options.channels; i++){
-                plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
+        int startPos;
+    
+        ConverDataToBytes(&rawData, rawData.count, sampleData);
+    
+    
+        processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, offset,processedData );
+        while(1){
+            PacketTransfer(dev, NULL, EP2, potReading, NULL, LIBUSB_TRANSFER_TYPE_INTERRUPT);
+            if(shiftPrevious != potReading[0] || cursorPrevious != potReading[1]){
+                startPos = shiftScale*potReading[0];
+                Start(width, height);
+                Background(50,50,50);
+                //grid(0,0,pixels_per_volt,width,height);
+                processSamples(sampleData, samples_per_screen, 0, width, pixels_per_volt, startPos,processedData );
+    
+                for(int i = 0; i < options.channels; i++){
+                    plotWave(processedData[i], samples_per_screen, pixels_per_volt*i, wavecolor[i]);
+                }
+                if(startPos <= eventLocation && eventLocation < samples_per_screen + startPos){
+                    plotTriggerEvent(samples_per_screen, 0, width, pixels_per_volt, eventLocation-startPos);
+                }
+                DisplayCursor(samples_per_screen, 0, width, pixels_per_volt, cursScale*(POTMAX-potReading[1]));
+                DisplayTime(startPos, width, secPerSample, eventLocation, samples_per_screen, cursScale*(POTMAX-potReading[0]));
+                End();
+                shiftPrevious = potReading[0];
+                cursorPrevious = potReading[1];
             }
-            if(startPos <= eventLocation && eventLocation < samples_per_screen + startPos){
-                plotTriggerEvent(samples_per_screen, 0, width, pixels_per_volt, eventLocation-startPos);
-            }
-            DisplayCursor(samples_per_screen, 0, width, pixels_per_volt, cursScale*(POTMAX-potReading[1]));
-            DisplayTime(startPos, width, secPerSample, eventLocation, samples_per_screen, cursScale*(POTMAX-potReading[1]));
-            End();
-            shiftPrevious = potReading[0];
-            cursorPrevious = potReading[1];
         }
-    }
+    printf("Target Found");
     return 0;
     
 }
@@ -192,4 +202,5 @@ void SelectWaveColors(){
         wavecolor[i][3] = 5;
     }
 }
+
 
