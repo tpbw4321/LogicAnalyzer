@@ -18,27 +18,27 @@
 
 
 
-//typedef enum Operands{
-//    A,
-//    B,
-//    C,
-//    D,
-//    E,
-//    F,
-//    G,
-//    H
-//}Operands;
-
 typedef enum Operands{
-    H,
-    G,
-    F,
-    E,
-    D,
-    C,
+    A,
     B,
-    A
+    C,
+    D,
+    E,
+    F,
+    G,
+    H
 }Operands;
+
+//typedef enum Operands{
+//    H,
+//    G,
+//    F,
+//    E,
+//    D,
+//    C,
+//    B,
+//    A
+//}Operands;
 
 typedef struct exprs{
     int * expressions;
